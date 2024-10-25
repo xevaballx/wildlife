@@ -1,5 +1,7 @@
 # wildlife
 
+# github workflow
+
 Note: This doc is based on using the command line (terminal) in VSCode, not the VSCode extension for git.
 
 ### 0 Clone the repo
