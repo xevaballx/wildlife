@@ -53,9 +53,10 @@ Comment and test your code before you ask for a PR so the reviewer will have an 
 When you are completely done with your feature and you are ready to merge these changes to main, go to the GitHub repo and open a Pull Request (PR) from your branch to Main.
 
 ### 9 Ask one of your peers to review. 
-If they have changes, do those changes on your branch. If it is perfect you can merge to main. Click ‘squash and merge’ on the PR.
+If the peer has changes for you, do those changes on your branch. If it is perfect, they can merge it for you or approve it for you to merge. Click ‘squash and merge’ on the PR.
 
 ### 10 Delete your upstream branch on gitHub.
+Or depending on your workflow, you can keep using your branch.
 
 ### 11 Repeat for your next feature! 
 Starting at step 1.
