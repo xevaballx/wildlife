@@ -1,3 +1,7 @@
+# data
+data/
+competition_givens/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
