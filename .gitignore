@@ -1,6 +1,8 @@
-# data
+# data and results
 data/
 competition_givens/
+results/
+
 
 # W&B
 wandb/
