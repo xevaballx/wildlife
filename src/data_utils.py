@@ -50,6 +50,7 @@ def load_data(base_path="../data/givens/"):
 
     return train_features, test_features, train_labels, species_labels
 
+
 def split_data(train_features, train_labels, type=None, random_state=42):
     """
     Split data by sites or otherwise.
@@ -92,6 +93,7 @@ def split_data(train_features, train_labels, type=None, random_state=42):
     )
         
     return X_train, X_val, y_train, y_val
+
 
 class ImagesDataset(Dataset):
     """Reads in an image, transforms pixel values, and serves
@@ -144,6 +146,7 @@ def block_timestamp(image):
     output = to_pil(tensor_output)
     return output
 
+
 def get_transforms(config, seed=42):
     """
     Builds torchvision transforms.Compose object based on conf.
@@ -188,6 +191,8 @@ def get_transforms(config, seed=42):
 
     return train_transforms, val_transforms
 
+
+########## currently not in use #########
 
 def block_timestamp_and_resize(image, target_size=(224, 224)):
     """
