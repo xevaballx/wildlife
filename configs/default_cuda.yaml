@@ -1,6 +1,6 @@
 # Default Configuration #
 
-device: "mps"
+device: "cuda"
 
 model:
   num_classes: 8
