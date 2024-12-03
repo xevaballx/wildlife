@@ -61,8 +61,8 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
         # ✨ W&B: Log loss over training steps, visualized in the UI live
         wandb.log({"loss" : loss, "epoch": epoch+1,})
 
-        # Print progress every 100 batches
-        if (batch_n + 1 ) % 100 == 0: 
+        # Print progress every 10 batches
+        if (batch_n + 1 ) % 10 == 0: 
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                 .format(epoch+1, config["train"]["epochs"], batch_n+1, len(train_loader), loss.item()))
             
