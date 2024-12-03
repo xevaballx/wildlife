@@ -33,6 +33,21 @@ def build_resnet50_basic(
     return model
 
 
+def build_efficientnet_v2_basic(
+        num_classes=8, hidden_units1=100,
+        dropout=0.1, freeze_backbone=False):
+    
+    model = models.efficientnet_v2_m(weights=models.EfficientNet_V2_M_Weights.IMAGENET1K_V1)
 
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=dropout, inplace=True),
+        nn.Linear(in_features=1280, out_features=num_classes)
+    )
+
+    if freeze_backbone:
+        for param in model.parameters():
+            param.requires_grad = False
+
+    return model
 
 

@@ -4,15 +4,15 @@ device: "cuda"
 
 model:
   num_classes: 8
-  architecture: resnet50
+  architecture: efficientnet
   freeze_backbone: False
-  dropout: 0.1
+  dropout: 0.2
   hidden_units1: 100
   
   
 train:
-  batch_size: 32
-  epochs: 5
+  batch_size: 4
+  epochs: 2
   lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
@@ -20,10 +20,10 @@ train:
 
 experiment:
   seed: 42
-  experiment_name: "baseline_resnet50"
+  experiment_name: "efficientnet"
 
 transforms:
-  resize: [224, 224]
+  resize: [480, 480]
   horizontal_flip: 0.5
   rotate: 15
   jitter:
