@@ -12,7 +12,7 @@ model:
   
 train:
   batch_size: 32
-  epochs: 5
+  epochs: 1
   lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
