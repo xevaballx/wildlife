@@ -5,7 +5,7 @@ import torch
 
 import wandb
 import torch.nn.functional as F
-from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 
 def setup_training(
         model, criterion='cross_entropy', optimizer="sdg", 
@@ -72,7 +72,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
 ###########
 
 def log_preds(
-        images, image_ids, labels, probs, predicted, test_table, counter, config):
+        images, image_ids, labels, probs, predicted, test_table):
     """
     Log predictions, confidence scores, and true labels for a batch of test 
     images. Creating a table of results in W&B. It visualizes image 
@@ -87,9 +87,7 @@ def log_preds(
     for img, img_id, true_label, pred, conf_scores in zip(
         log_images, image_ids, log_labels, log_preds, log_scores
     ):
-        if counter >= config["log"]["img_count"]:
-            break  # Stop logging once the limit is reached
-
+            
         # Convert image from [C, H, W] to [H, W, C]
         img = img.transpose(1, 2, 0)
         
@@ -100,13 +98,13 @@ def log_preds(
             true_label + 1,      # Ground-truth label
             *conf_scores         # Confidence scores for all classes
         )
-        counter += 1  # Increment the counter
+        break
 
 ################
 
 
 def evaluate(
-        model, val_loader, criterion, config, log_counter=0, device='cpu'):
+        model, val_loader, criterion, config, epoch, log_counter=0, device='cpu'):
     """
     Evaluate the model on a test/validation dataset.
     Returns: dict: Metrics including accuracy and average loss.
@@ -148,11 +146,11 @@ def evaluate(
             
 
             # Log predictions (only log a limited number of batches)
-            if batch_n < config["log"]["img_count"]:
+            if epoch == config["train"]["epochs"] and log_counter <= config["log"]["img_count"]:
                 log_preds(images, image_ids, labels, 
-                                     probs, predicted, 
-                                     test_table,log_counter, config)
+                                     probs, predicted,test_table)
                 log_counter += 1
+              
 
     # Calculate metrics
     acc = 100 * correct / total
@@ -162,6 +160,24 @@ def evaluate(
     f1 = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
     macro_f1 = f1_score(all_labels, all_preds, average="macro")
     # conf_matrix = confusion_matrix(all_labels, all_preds) #not using
+
+    class_report = classification_report(
+        all_labels, 
+        all_preds, 
+        target_names=[
+            "antelope_duiker", "bird", "blank", "civet_genet", 
+            "hog", "leopard", "monkey_prosimian", "rodent"
+        ],
+        output_dict=True,
+        zero_division=0
+    )
+
+    # ✨ Log class-wise F1 scores to W&B
+    for class_name, metrics in class_report.items():
+        if isinstance(metrics, dict):  # Ignore overall metrics like 'accuracy'
+            wandb.log({
+                f"f1_{class_name}": metrics["f1-score"]
+            })
 
     # ✨ Log metrics to W&B
     wandb.log({
