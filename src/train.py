@@ -1,23 +1,56 @@
+import torch
+import torch.nn as nn
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 from src.utils import set_seeds
-import torch
+from torchvision.ops import sigmoid_focal_loss
+
 
 import wandb
 import torch.nn.functional as F
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 
+
 def setup_training(
-        model, criterion='cross_entropy', optimizer="sdg", 
-        lr=0.001, momentum=0.9 ):
+        model, criterion='cross_entropy', optimizer="sgd", 
+        lr=0.001, momentum=0.9, gamma=2.0, alpha=1.0 ):
     """
     Set up the optimizer and loss function based on the training configuration.
-
+    Args:
+        model: The model to train.
+        criterion: Loss function ('cross_entropy' or 'focal').
+        optimizer: Optimizer type ('sgd').
+        lr: Learning rate.
+        momentum: Momentum for SGD.
+        gamma: Focusing parameter for focal loss.
+        alpha: Weighting factor for focal loss.
     Returns:
-        criterion, optimizer objects
+        crit: Loss function.
+        optim: Optimizer object.
     """
     if criterion == 'cross_entropy':
         crit = CrossEntropyLoss()
+    elif criterion == 'focal':
+        # Wrapper class to standardize the interface
+        class FocalLoss(nn.Module):
+            def __init__(self, gamma=2.0, alpha=1.0):
+                super().__init__()
+                self.alpha = alpha
+                self.gamma = gamma
+            
+            def forward(self, inputs, targets):
+                loss= sigmoid_focal_loss(
+                    inputs, targets, 
+                    alpha=self.alpha, 
+                    gamma=self.gamma, 
+                    reduction="mean"
+                )
+                # print("Loss value:", loss.item())
+                return loss
+            
+        crit = FocalLoss(gamma=gamma, alpha=alpha)
+    else:
+        raise ValueError(f"Unknown criterion: {criterion}")
 
     if optimizer == 'sgd':
         optim = SGD(
@@ -25,6 +58,8 @@ def setup_training(
             lr=lr,
             momentum=momentum,
         )
+    else:
+        raise ValueError(f"Unknown optimizer: {optimizer}")
 
     return crit, optim
 
@@ -49,6 +84,16 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
 
         # forward pass
         outputs = model(images)
+        # print("Output range:", outputs.min(), outputs.max())
+        # # print("Output mean:", outputs.mean())
+        # # print("Output std:", outputs.std())
+        # print("output shape:", outputs.shape)
+        # print("labels shape:", labels.shape)
+        # if config["train"]["criterion"] == "focal":
+        #     print('hi')
+        #     loss = criterion(outputs, labels) #* 100000 # Focal loss scaler
+        #     print(loss)
+        # else: loss = criterion(outputs, labels)
         loss = criterion(outputs, labels)
         total_loss += loss.item()
         tracking_loss.append(loss.item())  # Store batch loss for tracking 
@@ -63,7 +108,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
 
         # Print progress every 100 batches
         if (batch_n + 1 ) % 100 == 0: 
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
+            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.12f}'
                 .format(epoch+1, config["train"]["epochs"], batch_n+1, len(train_loader), loss.item()))
             
     avg_loss = total_loss / len(train_loader)
@@ -133,7 +178,11 @@ def evaluate(
             outputs = model(images)
             probs = F.softmax(outputs, dim=1)  # For logging
 
+            # if config["train"]["criterion"] == "focal":
+            #     loss = criterion(outputs, labels) * 1000 # Focal loss scaler
+            # else: loss = criterion(outputs, labels)
             loss = criterion(outputs, labels)
+            
             total_loss += loss.item()
 
             _, predicted = torch.max(outputs, dim=1) 
