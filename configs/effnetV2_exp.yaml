@@ -4,26 +4,28 @@ device: "mps"
 
 model:
   num_classes: 8
-  architecture: resnet50
+  architecture: efficientnet_v2
   freeze_backbone: False
-  dropout: 0.1
+  dropout: 0.0
   hidden_units1: 100
   
   
 train:
-  batch_size: 32
-  epochs: 5
+  batch_size: 8
+  epochs: 1
   lr: 0.01
   momentum: 0.9
   optimizer: "sgd"
-  criterion: "cross_entropy"
+  criterion: "focal"
+  gamma: 2.0
+  alpha: 0.5
 
 experiment:
   seed: 42
-  experiment_name: "baseline_resnet50"
+  experiment_name: efficientnet_v2
 
 transforms:
-  resize: [224, 224]
+  resize: [480,480]
   horizontal_flip: 0.5
   rotate: 15
   jitter:
@@ -32,7 +34,9 @@ transforms:
     saturation: 0.2
     hue: 0.1
   custom:
-    block_timestamp: true
+    block_timestamp: True
+
+    
 
 log:
   img_count: 50

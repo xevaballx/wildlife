@@ -166,6 +166,7 @@ def get_transforms(config, seed=42):
     if config["transforms"].get("custom", {}).get("block_timestamp", False):
         train_transform_list.append(transforms.Lambda(block_timestamp))
         val_transform_list.append(transforms.Lambda(block_timestamp))
+        
 
     train_transform_list.extend([
         transforms.RandomHorizontalFlip(p=config["transforms"]["horizontal_flip"]),

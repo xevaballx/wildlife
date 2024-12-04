@@ -32,6 +32,53 @@ def build_resnet50_basic(
     
     return model
 
+def build_efficientnet_b0_basic(
+        num_classes=8, 
+        hidden_units1=100, 
+        dropout=0.1, 
+        freeze_backbone=False):
+    """
+    Builds and returns an EfficientNet model.
+    Returns: nn.Module: PyTorch model.
+    """
+    from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
+
+    # Load the base EfficientNet model
+    model = efficientnet_b0(weights=EfficientNet_B0_Weights.IMAGENET1K_V1)
+
+    # Optionally freeze the backbone
+    if freeze_backbone:
+        for param in model.features.parameters():
+            param.requires_grad = False
+
+    # Modify the classifier head
+    in_features = model.classifier[1].in_features  # Get input size of the final layer
+    model.classifier = nn.Sequential(
+        nn.Linear(in_features, hidden_units1), 
+        nn.ReLU(inplace=True),
+        nn.Dropout(dropout),
+        nn.Linear(hidden_units1, num_classes)
+    )
+    
+    return model
+
+def build_efficientnet_v2_basic(
+        num_classes=8, hidden_units1=100,
+        dropout=0.1, freeze_backbone=False):
+    
+    model = models.efficientnet_v2_m(weights=models.EfficientNet_V2_M_Weights.IMAGENET1K_V1)
+    in_features = model.classifier[1].in_features  # Get input size of the final layer
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=dropout, inplace=True),
+        nn.Linear(in_features=in_features, out_features=num_classes)
+    )
+
+    if freeze_backbone:
+        for param in model.parameters():
+            param.requires_grad = False
+
+    return model
+
 
 
 
