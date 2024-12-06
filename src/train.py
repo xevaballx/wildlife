@@ -3,17 +3,62 @@ import torch.nn as nn
 from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 from src.utils import set_seeds
+from src.focal_loss import FocalLoss, reweight
 from torchvision.ops import sigmoid_focal_loss
+import numpy as np
 
 
 import wandb
 import torch.nn.functional as F
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
 
+def setup_training_2phase(
+        model, criterion='cross_entropy', optimizer="sgd", 
+        head_lr=0.01, backbone_lr=0.001, 
+        momentum=0.9, gamma=2.0, alpha=1.0, device='cpu' ):
+    """
+    Set up the optimizer and loss function based on the training configuration.
+    Args:
+        model: The model to train.
+        criterion: Loss function ('cross_entropy' or 'focal').
+        optimizer: Optimizer type ('sgd').
+        lr: Learning rate.
+        momentum: Momentum for SGD.
+        gamma: Focusing parameter for focal loss.
+        alpha: Weighting factor for focal loss.
+    Returns:
+        crit: Loss function.
+        optim: Optimizer object.
+    """
+    if criterion == 'cross_entropy':
+        crit = CrossEntropyLoss()
+    elif criterion == 'focal':
+        if alpha == 'reweight':
+            print("hi")
+            cls_num_list = [1867, 1324, 1800, 2055, 772, 1859, 1959, 1535]
+            alpha = reweight(cls_num_list, beta=0.9999)
+        crit = FocalLoss(gamma=gamma, weight=alpha, device=device)
+    else:
+        raise ValueError(f"Unknown criterion: {criterion}")
+    
+    if optimizer == 'sgd':
+        backbone_params = [param for name, param in model.named_parameters() if "fc" not in name]
+        head_params = model.fc.parameters()
+
+        optim = SGD([
+            {"params": backbone_params, "lr": head_lr},  # Small learning rate for backbone
+            {"params": head_params, "lr": backbone_lr}       # Larger learning rate for head
+        ], momentum=0.9)
+
+    else:
+        raise ValueError(f"Unknown optimizer: {optimizer}")
+
+    return crit, optim
+
 
 def setup_training(
         model, criterion='cross_entropy', optimizer="sgd", 
-        lr=0.001, momentum=0.9, gamma=2.0, alpha=1.0 ):
+        lr=0.001, momentum=0.9, gamma=2.0, alpha=1.0, device='cpu', cls_num_list=None ):
     """
     Set up the optimizer and loss function based on the training configuration.
     Args:
@@ -32,26 +77,30 @@ def setup_training(
         crit = CrossEntropyLoss()
     elif criterion == 'focal':
         # Wrapper class to standardize the interface
-        class FocalLoss(nn.Module):
-            def __init__(self, gamma=2.0, alpha=1.0):
-                super().__init__()
-                self.alpha = alpha
-                self.gamma = gamma
+        # class FocalLoss(nn.Module):
+        #     def __init__(self, gamma=2.0, alpha=1.0):
+        #         super().__init__()
+        #         self.alpha = alpha
+        #         self.gamma = gamma
             
-            def forward(self, inputs, targets):
-                loss= sigmoid_focal_loss(
-                    inputs, targets, 
-                    alpha=self.alpha, 
-                    gamma=self.gamma, 
-                    reduction="mean"
-                )
-                # print("Loss value:", loss.item())
-                return loss
-            
-        crit = FocalLoss(gamma=gamma, alpha=alpha)
+        #     def forward(self, inputs, targets):
+        #         loss= sigmoid_focal_loss(
+        #             inputs, targets, 
+        #             alpha=self.alpha, 
+        #             gamma=self.gamma, 
+        #             reduction="mean"
+        #         )
+        #         # print("Loss value:", loss.item())
+        #         return loss
+        # print(alpha)
+        if alpha == 'reweight':
+            # print("hi")
+            alpha = reweight(cls_num_list, beta=0.9999)
+            # print(alpha)
+        crit = FocalLoss(gamma=gamma, weight=alpha, device=device)
     else:
         raise ValueError(f"Unknown criterion: {criterion}")
-
+    
     if optimizer == 'sgd':
         optim = SGD(
             model.parameters(),
@@ -76,7 +125,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
     model.train()
     total_loss = 0
     # total_steps = len(train_loader) # num batches in loader
-    tracking_loss = []  # List to store loss for every batch
+    # tracking_loss = []  # List to store loss for every batch
 
     for batch_n, batch in enumerate(train_loader):
         images = batch["image"].to(device)
@@ -84,19 +133,9 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
 
         # forward pass
         outputs = model(images)
-        # print("Output range:", outputs.min(), outputs.max())
-        # # print("Output mean:", outputs.mean())
-        # # print("Output std:", outputs.std())
-        # print("output shape:", outputs.shape)
-        # print("labels shape:", labels.shape)
-        # if config["train"]["criterion"] == "focal":
-        #     print('hi')
-        #     loss = criterion(outputs, labels) #* 100000 # Focal loss scaler
-        #     print(loss)
-        # else: loss = criterion(outputs, labels)
         loss = criterion(outputs, labels)
         total_loss += loss.item()
-        tracking_loss.append(loss.item())  # Store batch loss for tracking 
+        # tracking_loss.append(loss.item())  # Store batch loss for tracking 
 
         # backward and optimize
         optimizer.zero_grad()
@@ -104,7 +143,8 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
         optimizer.step()
 
         # ✨ W&B: Log loss over training steps, visualized in the UI live
-        wandb.log({"loss" : loss, "epoch": epoch+1,})
+        if (batch_n + 1 ) % 50 == 0: 
+            wandb.log({"loss" : loss, "epoch": epoch+1,})
 
         # Print progress every 100 batches
         if (batch_n + 1 ) % 100 == 0: 
@@ -112,7 +152,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
                 .format(epoch+1, config["train"]["epochs"], batch_n+1, len(train_loader), loss.item()))
             
     avg_loss = total_loss / len(train_loader)
-    return avg_loss, tracking_loss
+    return avg_loss #,tracking_loss
 
 ###########
 
@@ -169,7 +209,7 @@ def evaluate(
     ])
     
     with torch.no_grad():
-        for batch_n, batch in enumerate(val_loader):
+        for _, batch in enumerate(val_loader):
             images = batch["image"].to(device)
             labels = batch["label"].to(device)
             image_ids = batch["image_id"]
@@ -178,9 +218,6 @@ def evaluate(
             outputs = model(images)
             probs = F.softmax(outputs, dim=1)  # For logging
 
-            # if config["train"]["criterion"] == "focal":
-            #     loss = criterion(outputs, labels) * 1000 # Focal loss scaler
-            # else: loss = criterion(outputs, labels)
             loss = criterion(outputs, labels)
             
             total_loss += loss.item()
@@ -193,7 +230,6 @@ def evaluate(
             all_preds.extend(predicted.cpu().numpy())
             all_labels.extend(labels.argmax(dim=1).cpu().numpy())  # Convert one-hot to class indices
             
-
             # Log predictions (only log a limited number of batches)
             if epoch == config["train"]["epochs"] and log_counter <= config["log"]["img_count"]:
                 log_preds(images, image_ids, labels, 
@@ -248,7 +284,7 @@ def evaluate(
     })
     wandb.log({"test_predictions": test_table})
         
-    print(f"Evaluation - Loss: {avg_loss:.4f}, Accuracy: {acc:.2f}%, Precision: {precision:.2f}, Recall: {recall:.2f}, F1: {f1:.2f}")
+    print(f"Eval - Loss: {avg_loss:.4f}, Accuracy: {acc:.2f}%, Precision: {precision:.2f}, Recall: {recall:.2f}, F1: {f1:.2f}, MacroF1: {macro_f1:.2f}")
     
     return {
         "loss": avg_loss,
@@ -260,5 +296,97 @@ def evaluate(
         "all_preds": all_preds,
         "all_labels": all_labels
     }
+  
 
+def evaluate_low_log(
+        model, val_loader, criterion, config, epoch, log_counter=0, device='cpu'):
+    """
+    Evaluate the model on a test/validation dataset.
+    Returns: dict: Metrics including accuracy and average loss.
+    """
+    model.eval()
+    total_loss, correct, total = 0, 0, 0
+    
+    # Collect predictions and labels
+    all_preds, all_labels = [], []
 
+    # Initialize confusion matrix
+    num_classes = config["model"]["num_classes"]
+    class_names = [
+        "antelope_duiker", "bird", "blank", "civet_genet", 
+        "hog", "leopard", "monkey_prosimian", "rodent"
+    ]
+    
+    with torch.no_grad():
+        for batch in val_loader:
+            images = batch["image"].to(device)
+            labels = batch["label"].to(device)
+            true_labels = labels.argmax(dim=1)
+
+            # forward pass
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            total_loss += loss.item()
+
+            _, predicted = torch.max(outputs, dim=1) 
+            correct += (predicted == labels.argmax(dim=1)).sum().item()
+            total += labels.size(0)
+            # Store predictions and labels for metrics
+            all_preds.extend(predicted.cpu().numpy())
+            all_labels.extend(labels.argmax(dim=1).cpu().numpy())  # Convert one-hot to class indices
+            
+            
+    # Calculate metrics
+    acc = 100 * correct / total
+    avg_loss = total_loss / len(val_loader)
+    precision = precision_score(all_labels, all_preds, average="weighted", zero_division=0)
+    recall = recall_score(all_labels, all_preds, average="weighted", zero_division=0)
+    f1 = f1_score(all_labels, all_preds, average="weighted", zero_division=0)
+    macro_f1 = f1_score(all_labels, all_preds, average="macro")
+    # conf_matrix = confusion_matrix(all_labels, all_preds) #not using
+
+    class_report = classification_report(
+        all_labels, 
+        all_preds, 
+        target_names=class_names,
+        output_dict=True,
+        zero_division=0
+    )
+
+    # ✨ Log class-wise F1 scores to W&B
+    for class_name, metrics in class_report.items():
+        if isinstance(metrics, dict):  # Ignore overall metrics like 'accuracy'
+            wandb.log({
+                f"f1_{class_name}": metrics["f1-score"]
+            })
+
+    # ✨ Log metrics to W&B
+    wandb.log({
+        "eval_loss": avg_loss,
+        "eval_accuracy": acc,
+        "eval_precision": precision,
+        "eval_recall": recall,
+        "eval_f1": f1,
+        "eval_macro_f1": macro_f1,
+        "confusion_matrix": wandb.plot.confusion_matrix(
+            probs=None,
+            y_true=all_labels,
+            preds=all_preds,
+            class_names=class_names
+        )
+    })
+        
+    print(f"Eval - Loss: {avg_loss:.4f}, "
+          f"Accuracy: {acc:.2f}%, Precision: {precision:.2f}, "
+          f"Recall: {recall:.2f}, F1: {f1:.2f}, MacroF1: {macro_f1:.2f}")
+    
+    return {
+        "loss": avg_loss,
+        "accuracy": acc,
+        "precision": precision,
+        "recall": recall,
+        "f1": f1,
+        "macro_f1": macro_f1,
+        "all_preds": all_preds,
+        "all_labels": all_labels
+    }

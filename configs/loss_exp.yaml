@@ -6,19 +6,19 @@ model:
   num_classes: 8
   architecture: resnet50
   freeze_backbone: False
-  dropout: 0.1
+  dropout: .15
   hidden_units1: 100
   
 
 train:
   batch_size: 32
-  epochs: 5
-  lr: 0.1
+  epochs: 3
+  lr: 0.005
   momentum: 0.9
   optimizer: "sgd"
   criterion: "focal"
-  gamma: 2.0
-  alpha: 0.5
+  gamma: 3.0
+  alpha: "reweight"
   #alpha Weighting factor in range (0,1) to balance positive vs negative examples or -1 for ignore. Default: 0.25.
   #gamma Exponent of the modulating factor (1 - p_t) to balance easy vs hard examples. Default: 2.
   # g - focus on hard to classify
