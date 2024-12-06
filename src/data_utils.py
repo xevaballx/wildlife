@@ -60,7 +60,6 @@ def split_data(train_features, train_labels, type=None, random_state=42):
         type (str): Strategy to split the data. Options are:
             - 'default': Random split with stratification by labels.
             - 'sites': Split based on unique sites.
-
     Returns:
         X_train, X_val, y_train, y_val (tuple): Training and validation 
             splits for features and labels.
@@ -99,7 +98,6 @@ class ImagesDataset(Dataset):
     """Reads in an image, transforms pixel values, and serves
     a dictionary containing the image id, image tensors, and label.
     """
-
     def __init__(self, features, 
                  labels=None, 
                  transform=None, device='cpu'):
@@ -109,7 +107,6 @@ class ImagesDataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
-    
         image_id = self.data.index[index]
         image = Image.open(self.data.iloc[index]["filepath"]).convert("RGB")
 
@@ -128,7 +125,6 @@ class ImagesDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
-
 
 
 def block_timestamp(image):
@@ -167,7 +163,6 @@ def get_transforms(config, seed=42):
         train_transform_list.append(transforms.Lambda(block_timestamp))
         val_transform_list.append(transforms.Lambda(block_timestamp))
         
-
     train_transform_list.extend([
         transforms.RandomHorizontalFlip(p=config["transforms"]["horizontal_flip"]),
         transforms.RandomRotation(config["transforms"]["rotate"]),

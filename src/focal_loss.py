@@ -25,7 +25,6 @@ def reweight(cls_num_list, beta=0.9999):
      # normalize the weights so they sum to the number of classes
     per_cls_weights = alpha / np.sum(alpha) * len(cls_num_list)
 
-
     return torch.FloatTensor(per_cls_weights)
 
 
@@ -39,7 +38,6 @@ class FocalLoss(nn.Module):
         self.weight = weight # output from reweight
         self.device=device
         
-
     def forward(self, input, target):
         """
         Implement forward of focal loss
@@ -53,14 +51,6 @@ class FocalLoss(nn.Module):
 
         # compute softmax probabilities
         probs = F.softmax(input, dim=1) # (N, num_classes)
-
-        # probs of the target class
-        # target = target.long() 
-        # target_one_hot = F.one_hot(target, num_classes=probs.size(1)).float()
-
-        # print("probs shape:", probs.shape)  # (N, C)
-        # print("target shape:", target.shape)  # (N,)
-        # print("target_one_hot shape:", target_one_hot.shape)  # (N, C)
 
         probs_true_cls = torch.sum(probs * target, dim=1)
 

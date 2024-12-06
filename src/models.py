@@ -32,9 +32,9 @@ def build_resnet50_basic(
     )
 
     # Check which params are trainable
-    print("freeze_backbone: ", freeze_backbone)
-    for name, param in model.named_parameters():
-        print(f"{name}: requires_grad={param.requires_grad}")
+    # print("freeze_backbone: ", freeze_backbone)
+    # for name, param in model.named_parameters():
+    #     print(f"{name}: requires_grad={param.requires_grad}")
 
     return model
 

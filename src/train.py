@@ -6,55 +6,9 @@ from src.utils import set_seeds
 from src.focal_loss import FocalLoss, reweight
 from torchvision.ops import sigmoid_focal_loss
 import numpy as np
-
-
 import wandb
 import torch.nn.functional as F
 from sklearn.metrics import precision_score, recall_score, f1_score, classification_report, confusion_matrix
-
-def setup_training_2phase(
-        model, criterion='cross_entropy', optimizer="sgd", 
-        head_lr=0.01, backbone_lr=0.001, 
-        momentum=0.9, gamma=2.0, alpha=1.0, device='cpu' ):
-    """
-    Set up the optimizer and loss function based on the training configuration.
-    Args:
-        model: The model to train.
-        criterion: Loss function ('cross_entropy' or 'focal').
-        optimizer: Optimizer type ('sgd').
-        lr: Learning rate.
-        momentum: Momentum for SGD.
-        gamma: Focusing parameter for focal loss.
-        alpha: Weighting factor for focal loss.
-    Returns:
-        crit: Loss function.
-        optim: Optimizer object.
-    """
-    if criterion == 'cross_entropy':
-        crit = CrossEntropyLoss()
-    elif criterion == 'focal':
-        if alpha == 'reweight':
-            print("hi")
-            cls_num_list = [1867, 1324, 1800, 2055, 772, 1859, 1959, 1535]
-            alpha = reweight(cls_num_list, beta=0.9999)
-        crit = FocalLoss(gamma=gamma, weight=alpha, device=device)
-    else:
-        raise ValueError(f"Unknown criterion: {criterion}")
-    
-    if optimizer == 'sgd':
-        backbone_params = [param for name, param in model.named_parameters() if "fc" not in name]
-        head_params = model.fc.parameters()
-
-        optim = SGD([
-            {"params": backbone_params, "lr": head_lr},  # Small learning rate for backbone
-            {"params": head_params, "lr": backbone_lr}       # Larger learning rate for head
-        ], momentum=0.9)
-
-    else:
-        raise ValueError(f"Unknown optimizer: {optimizer}")
-
-    return crit, optim
-
 
 def setup_training(
         model, criterion='cross_entropy', optimizer="sgd", 
@@ -185,8 +139,6 @@ def log_preds(
         )
         break
 
-################
-
 
 def evaluate(
         model, val_loader, criterion, config, epoch, log_counter=0, device='cpu'):
@@ -219,7 +171,6 @@ def evaluate(
             probs = F.softmax(outputs, dim=1)  # For logging
 
             loss = criterion(outputs, labels)
-            
             total_loss += loss.item()
 
             _, predicted = torch.max(outputs, dim=1) 
@@ -234,8 +185,7 @@ def evaluate(
             if epoch == config["train"]["epochs"] and log_counter <= config["log"]["img_count"]:
                 log_preds(images, image_ids, labels, 
                                      probs, predicted,test_table)
-                log_counter += 1
-              
+                log_counter += 1  
 
     # Calculate metrics
     acc = 100 * correct / total
@@ -321,7 +271,6 @@ def evaluate_low_log(
         for batch in val_loader:
             images = batch["image"].to(device)
             labels = batch["label"].to(device)
-            true_labels = labels.argmax(dim=1)
 
             # forward pass
             outputs = model(images)
@@ -390,3 +339,48 @@ def evaluate_low_log(
         "all_preds": all_preds,
         "all_labels": all_labels
     }
+
+############## currently not in use
+
+def setup_training_2phase(
+        model, criterion='cross_entropy', optimizer="sgd", 
+        head_lr=0.01, backbone_lr=0.001, 
+        momentum=0.9, gamma=2.0, alpha=1.0, device='cpu' ):
+    """
+    Set up the optimizer and loss function based on the training configuration.
+    Args:
+        model: The model to train.
+        criterion: Loss function ('cross_entropy' or 'focal').
+        optimizer: Optimizer type ('sgd').
+        lr: Learning rate.
+        momentum: Momentum for SGD.
+        gamma: Focusing parameter for focal loss.
+        alpha: Weighting factor for focal loss.
+    Returns:
+        crit: Loss function.
+        optim: Optimizer object.
+    """
+    if criterion == 'cross_entropy':
+        crit = CrossEntropyLoss()
+    elif criterion == 'focal':
+        if alpha == 'reweight':
+            print("hi")
+            cls_num_list = [1867, 1324, 1800, 2055, 772, 1859, 1959, 1535]
+            alpha = reweight(cls_num_list, beta=0.9999)
+        crit = FocalLoss(gamma=gamma, weight=alpha, device=device)
+    else:
+        raise ValueError(f"Unknown criterion: {criterion}")
+    
+    if optimizer == 'sgd':
+        backbone_params = [param for name, param in model.named_parameters() if "fc" not in name]
+        head_params = model.fc.parameters()
+
+        optim = SGD([
+            {"params": backbone_params, "lr": head_lr},  # Small learning rate for backbone
+            {"params": head_params, "lr": backbone_lr}       # Larger learning rate for head
+        ], momentum=0.9)
+
+    else:
+        raise ValueError(f"Unknown optimizer: {optimizer}")
+
+    return crit, optim

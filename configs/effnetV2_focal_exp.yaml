@@ -6,23 +6,23 @@ model:
   num_classes: 8
   architecture: efficientnet_v2
   freeze_backbone: False
-  dropout: 0.2
+  dropout: 0.1
   hidden_units1: 100
   
 train:
   batch_size: 8
-  epochs: 13
+  epochs: 3
   lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
-  criterion: "cross_entropy"
+  criterion: "focal"
   gamma: 3.0
   alpha: "reweight"
   # alpha: None
 
 experiment:
   seed: 42
-  experiment_name: efficientnet_v2
+  experiment_name: effnet_v2_focal
 
 transforms:
   resize: [480,480]
