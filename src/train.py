@@ -100,6 +100,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
         if (batch_n + 1 ) % 50 == 0: 
             wandb.log({"loss" : loss, "epoch": epoch+1,})
 
+
         # Print progress every 100 batches
         if (batch_n + 1 ) % 100 == 0: 
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.12f}'

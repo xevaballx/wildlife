@@ -87,7 +87,6 @@ def build_efficientnet_v2_basic(
     return model
 
 
-
 # def build_deit_model(
 #     num_classes=8, 
 #     hidden_units1=None, 
@@ -130,8 +129,6 @@ def build_efficientnet_v2_basic(
 #     )
     
 #     return feature_extractor, model
-
-
 
 
 """
