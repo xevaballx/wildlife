@@ -1,4 +1,4 @@
-# Default Configuration #
+# added focal loss #
 
 device: "mps"
 
@@ -6,21 +6,26 @@ model:
   num_classes: 8
   architecture: resnet50
   freeze_backbone: False
-  dropout: 0.1
+  dropout: .15
   hidden_units1: 100
   
-  
+
 train:
   batch_size: 32
-  epochs: 1
-  lr: 0.001
+  epochs: 3
+  lr: 0.005
   momentum: 0.9
   optimizer: "sgd"
-  criterion: "cross_entropy"
-
+  criterion: "focal"
+  gamma: 3.0
+  alpha: "reweight"
+  #alpha Weighting factor in range (0,1) to balance positive vs negative examples or -1 for ignore. Default: 0.25.
+  #gamma Exponent of the modulating factor (1 - p_t) to balance easy vs hard examples. Default: 2.
+  # g - focus on hard to classify
+  # a - focus on minority
 experiment:
   seed: 42
-  experiment_name: "baseline_resnet50"
+  experiment_name: "resnet50_focal"
 
 transforms:
   resize: [224, 224]
@@ -32,7 +37,7 @@ transforms:
     saturation: 0.2
     hue: 0.1
   custom:
-    block_timestamp: true
+    block_timestamp: True
 
 log:
   img_count: 20

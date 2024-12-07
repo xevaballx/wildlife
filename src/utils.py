@@ -5,7 +5,6 @@ Helper Functions
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from PIL import Image
 from torchvision import transforms
 import random

@@ -4,16 +4,16 @@ device: "mps"
 
 model:
   num_classes: 8
-  architecture: resnet50
+  architecture: efficientnet_b0
   freeze_backbone: False
-  dropout: 0.1
+  dropout: 0.0
   hidden_units1: 100
   
   
 train:
-  batch_size: 32
-  epochs: 5
-  lr: 0.01
+  batch_size: 4
+  epochs: 2
+  lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
   criterion: "cross_entropy"
@@ -33,6 +33,8 @@ transforms:
     hue: 0.1
   custom:
     block_timestamp: true
+
+    
 
 log:
   img_count: 50
