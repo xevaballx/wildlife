@@ -2,6 +2,7 @@
 from .data_utils import get_transforms, load_data, split_data
 from .utils import (verify_data, plot_species_grid, verify_splits, 
                     set_seeds, verify_loader_transforms)
+from .focal_loss import FocalLoss, reweight
 
 
 __all__ = ["get_transforms", 
