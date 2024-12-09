@@ -119,8 +119,8 @@ def verify_loader_transforms(loader, title_type='train'):
         print("Labels shape:", batch["label"].shape)  # Tensor shape of labels
 
         # Visualize the first image and its label
-        first_image = batch["image"][1]
-        first_label = batch["label"][1]
+        first_image = batch["image"][0]
+        first_label = batch["label"][0]
 
         # Convert image to PIL and display
         to_pil = transforms.ToPILImage()
