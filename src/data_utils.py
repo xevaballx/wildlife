@@ -122,11 +122,7 @@ class ImagesDataset(Dataset):
             sample = {"image_id": image_id}
 
             if label[3] == 0 and random.uniform(0,1) <= 0.1:
-                target = self.targets.sample(n=1)
-                target_path = target["filepath"].values[0]
-                label = torch.tensor(self.label.loc[target.index].values[0], dtype=torch.float)
-                
-                target = Image.open(target_path).convert("RGB")
+                target = Image.open(self.targets.sample(n=1)["filepath"].values[0]).convert("RGB")
                 resize = transforms.Resize([224,224])
                 image = resize(image)
                 target = resize(target)
@@ -195,7 +191,7 @@ class CopyPaste(object):
         
         if len(boxes) == 0:
             return source_image
-        
+
         chosen_box = boxes[random.choice(range(len(boxes)))]
         left, top, right, bottom = [int(i) for i in chosen_box]
         object_crop = source_image.crop((left, top, right, bottom))
@@ -208,6 +204,8 @@ class CopyPaste(object):
         paste_y = random.randint(0, target_height - (bottom - top))
         
         target_image.paste(object_crop, (paste_x, paste_y))
+        plt.figure()
+        plt.imshow(target_image)
         
         return target_image
 
