@@ -1,0 +1,42 @@
+ # Default Configuration #
+
+device: "cuda"
+
+model:
+  num_classes: 1
+  architecture: resnet50
+  freeze_backbone: False
+  dropout: 0.1
+  hidden_units1: 100
+  
+  
+train:
+  batch_size: 16
+  epochs: 10
+  lr: 0.001
+  momentum: 0.9
+  optimizer: "adam"
+  criterion: "binary_cross_entropy"
+
+experiment:
+  seed: 42
+  experiment_name: "single_model_ensemble_train_resnet_antelope_duiker"
+
+transforms:
+  resize: [480, 480]
+  horizontal_flip: 0.5
+  rotate: 15
+  jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+  custom:
+    block_timestamp: true
+
+log:
+  img_count: 50
+ 
+
+
+

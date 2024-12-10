@@ -2,6 +2,7 @@
 data/
 competition_givens/
 results/
+pretrained_models/
 
 
 # W&B
