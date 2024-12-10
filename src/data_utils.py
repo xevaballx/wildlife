@@ -5,7 +5,7 @@ import src
 import torch
 import PIL
 import torchvision.transforms.functional as TF
-from torchvision import transforms
+from torchvision import transforms, models
 from PIL import Image
 import numpy as np
 import random
@@ -98,28 +98,39 @@ class ImagesDataset(Dataset):
     """Reads in an image, transforms pixel values, and serves
     a dictionary containing the image id, image tensors, and label.
     """
-    def __init__(self, features, 
+    def __init__(self, features, targets, 
                  labels=None, 
-                 transform=None, device='cpu'):
+                 transform=None, copypaste=None, device='cpu'):
         self.data = features
+        self.targets = targets
         self.label = labels
         self.device = device
         self.transform = transform
+        self.copypaste = copypaste
 
     def __getitem__(self, index):
         image_id = self.data.index[index]
         image = Image.open(self.data.iloc[index]["filepath"]).convert("RGB")
 
-        if self.transform:
-            image = self.transform(image)
-
-        sample = {"image_id": image_id, "image": image}
-     
         if self.label is not None:
             label = torch.tensor(self.label.iloc[index].values, dtype=torch.float)
             if self.device:
                 label = label.to(self.device)
+            sample = {"image_id": image_id}
+
+            if label[3] == 0 and random.uniform(0,1) <= 0.1:
+                target = Image.open(self.targets.sample(n=1)["filepath"].values[0]).convert("RGB")
+                resize = transforms.Resize([224,224])
+                image = resize(image)
+                target = resize(target)
+                image = self.copypaste(source_image=image, target_image=target)
+
             sample["label"] = label
+
+        if self.transform:
+            image = self.transform(image)
+
+        sample["image"] = image
 
         return sample
 
@@ -141,6 +152,58 @@ def block_timestamp(image):
     to_pil = transforms.ToPILImage()
     output = to_pil(tensor_output)
     return output
+
+
+class CopyPaste(object):
+    """
+    Use object detection to find an object in the picture. Copy and paste it onto a target.
+    """
+
+    def __init__(self, device='cpu'):
+        self.model = models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT").to(device)
+        self.model.eval()
+        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.device = device
+
+    def __call__(self, source_image, target_image):
+        """Use object detection to find an object in the picture. Copy and paste it onto a target.
+
+        Args:
+            source_image: The image to source the object
+            target_image: The blank background to paste the object on
+
+        Returns:
+            image: The target image with the object from the source image pasted on it
+        """
+        source_image_tensor = self.transform(source_image).unsqueeze(0).to(self.device)
+
+        with torch.no_grad():
+            prediction = self.model(source_image_tensor)
+        
+        boxes = prediction[0]['boxes']
+        scores = prediction[0]['scores']
+        valid_indices = scores > 0.5
+        boxes = boxes[valid_indices]
+        
+        if len(boxes) == 0:
+            return source_image
+
+        chosen_box = boxes[random.choice(range(len(boxes)))]
+        left, top, right, bottom = [int(i) for i in chosen_box]
+        object_crop = source_image.crop((left, top, right, bottom))
+
+        random_angle = random.uniform(-10, 10)
+        object_crop = object_crop.rotate(random_angle)
+        
+        target_width, target_height = target_image.size
+        paste_x = random.randint(0, target_width - (right - left))
+        paste_y = random.randint(0, target_height - (bottom - top))
+        
+        target_image.paste(object_crop, (paste_x, paste_y))
+        plt.figure()
+        plt.imshow(target_image)
+        
+        return target_image
 
 
 def get_transforms(config, seed=42):
