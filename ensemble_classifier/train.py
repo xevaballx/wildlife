@@ -49,6 +49,8 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
 
         # forward pass
         outputs = model(images)
+        # print(f"Outputs in the training loop:")
+        # print(outputs[0])
         loss = criterion(outputs, labels)
         total_loss += loss.item()
         tracking_loss.append(loss.item())  # Store batch loss for tracking 
@@ -62,7 +64,7 @@ def train(model, train_loader, criterion, optimizer, epoch, config, device='cpu'
         wandb.log({"loss" : loss, "epoch": epoch+1,})
 
         # Print progress every 10 batches
-        if (batch_n + 1 ) % 10 == 0: 
+        if (batch_n + 1 ) % 100 == 0: 
             print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
                 .format(epoch+1, config["train"]["epochs"], batch_n+1, len(train_loader), loss.item()))
             
@@ -131,23 +133,23 @@ def evaluate(
 
             # forward pass
             outputs = model(images).to(device)
-            outputs = outputs.squeeze()
-            probs = F.sigmoid(outputs)  # For logging
+            #outputs = outputs.squeeze()
+            probs = F.softmax(outputs, dim=1)  # For logging
             loss = criterion(outputs, labels)
-            print(f"Loss: {loss}")
+            # print(f"Loss: {loss}")
             total_loss += loss.item()
-            _, predicted = torch.max(probs, dim=1)
-            print("Predicted: ")
-            print(predicted)
-            print("Correct:")
-            print(labels.argmax(dim=1))
-            print()
+            _, predicted = torch.max(outputs, dim=1)
+            # print("Predicted: ")
+            # print(predicted)
+            # print("Correct:")
+            # print(labels.argmax(dim=1))
+            # print()
             correct += (predicted == labels.argmax(dim=1)).sum().item()
             total += labels.size(0)
 
             # Store predictions and labels for metrics
             all_preds.extend(predicted.cpu().numpy())
-            all_labels.extend(labels.argmax(dim=0).cpu().numpy())  # Convert one-hot to class indices
+            all_labels.extend(labels.argmax(dim=1).cpu().numpy())  # Convert one-hot to class indices
             
 
             # Log predictions (only log a limited number of batches)

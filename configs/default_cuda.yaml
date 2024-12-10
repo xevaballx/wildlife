@@ -11,8 +11,8 @@ model:
   
   
 train:
-  batch_size: 4
-  epochs: 2
+  batch_size: 32
+  epochs: 10
   lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
@@ -23,7 +23,7 @@ experiment:
   experiment_name: "efficientnet"
 
 transforms:
-  resize: [480, 480]
+  resize: [224, 224]
   horizontal_flip: 0.5
   rotate: 15
   jitter:
