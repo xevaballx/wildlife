@@ -27,14 +27,14 @@ def setup_training(
         crit: Loss function.
         optim: Optimizer object.
     """
+    class_weights = None
+    if alpha == 'reweight' and cls_num_list is not None:
+        class_weights = reweight(cls_num_list, beta=0.9999).to(device)
+
     if criterion == 'cross_entropy':
-        crit = CrossEntropyLoss()
+        crit = CrossEntropyLoss(weight=class_weights)
     elif criterion == 'focal':
-        if alpha == 'reweight':
-            # print("hi")
-            alpha = reweight(cls_num_list, beta=0.9999)
-            # print(alpha)
-        crit = FocalLoss(gamma=gamma, weight=alpha, device=device)
+        crit = FocalLoss(gamma=gamma, weight=class_weights, device=device)
     else:
         raise ValueError(f"Unknown criterion: {criterion}")
     
@@ -46,7 +46,10 @@ def setup_training(
             weight_decay=weight_decay
         )
     elif optimizer == 'adam':
-        optim = torch.optim.Adam(model.parameters(),weight_decay=weight_decay,lr=lr)
+        optim = torch.optim.Adam(
+            model.parameters(),
+            weight_decay=weight_decay,
+            lr=lr)
     else:
         raise ValueError(f"Unknown optimizer: {optimizer}")
 
