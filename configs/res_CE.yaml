@@ -1,6 +1,6 @@
 # Resnet50 CE Loss Configuration #
 
-device: "mps"
+device: "cuda"
 
 model:
   num_classes: 8
