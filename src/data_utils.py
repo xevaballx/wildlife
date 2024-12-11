@@ -100,18 +100,28 @@ class ImagesDataset(Dataset):
     """
     def __init__(self, features, 
                  labels=None, 
-                 transform=None, device='cpu'):
+                 transform=None, feature_extractor=None, device='cpu'):
         self.data = features
         self.label = labels
         self.device = device
         self.transform = transform
+        self.feature_extractor = feature_extractor
 
     def __getitem__(self, index):
         image_id = self.data.index[index]
         image = Image.open(self.data.iloc[index]["filepath"]).convert("RGB")
-
+        
         if self.transform:
+            # print(self.transform)
             image = self.transform(image)
+            # print(f"Transformed Image type: {type(image)}, Min: {image.min().item()}, Max: {image.max().item()}")
+
+        # Apply the DeiT feature extractor
+        if self.feature_extractor:
+            # print(f"Transformed Image type: {type(image)}, Min: {image.min().item()}, Max: {image.max().item()}")
+
+            processed = self.feature_extractor(images=image, do_rescale=False, return_tensors="pt")
+            image = processed["pixel_values"].squeeze(0)  # Shape [C, H, W]
 
         sample = {"image_id": image_id, "image": image}
      
@@ -180,6 +190,51 @@ def get_transforms(config, seed=42):
     val_transform_list.extend([
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
+
+    train_transforms =  transforms.Compose(train_transform_list)
+    val_transforms = transforms.Compose(val_transform_list)
+
+    return train_transforms, val_transforms
+
+def get_transforms_transformer(config, seed=42):
+    """
+    Builds torchvision transforms.Compose object based on conf.
+    Args: config (dict): Dictionary with transform parameters.
+    Returns: transforms.Compose: train_transforms, val_transforms
+    """
+    src.set_seeds(seed)
+    if config["transforms"]["resize"] == "No":
+        train_transform_list = []
+        val_transform_list = []
+        print("in resize == None")
+    else: 
+        train_transform_list = [
+            transforms.Resize(config["transforms"]["resize"])]
+        val_transform_list = [
+            transforms.Resize(config["transforms"]["resize"])]
+
+    # Add custom Lambda transform if specified
+    if config["transforms"].get("custom", {}).get("block_timestamp", False):
+        train_transform_list.append(transforms.Lambda(block_timestamp))
+        val_transform_list.append(transforms.Lambda(block_timestamp))
+        
+    train_transform_list.extend([
+        transforms.RandomHorizontalFlip(p=config["transforms"]["horizontal_flip"]),
+        # transforms.RandomRotation(config["transforms"]["rotate"])
+        transforms.ColorJitter(
+            brightness=config["transforms"]["jitter"]["brightness"],
+            contrast=config["transforms"]["jitter"]["contrast"],
+            saturation=config["transforms"]["jitter"]["saturation"],
+            hue=config["transforms"]["jitter"]["hue"]),
+        transforms.ToTensor(),
+        # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
+
+    # Convert to tensor and normalize
+    val_transform_list.extend([
+        transforms.ToTensor(),
+    #     # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
     ])
 
     train_transforms =  transforms.Compose(train_transform_list)

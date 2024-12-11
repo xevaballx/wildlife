@@ -4,30 +4,30 @@ device: "mps"
 
 model:
   num_classes: 8
-  architecture: efficientnet_v2
-  freeze_backbone: False
+  architecture: deit
+  freeze_backbone: True
   dropout: 0.1
-  hidden_units1: 100
+  hidden_units1: 256
   
 train:
   batch_size: 8
-  epochs: 3
+  epochs: 2
   lr: 0.001
   momentum: 0.9
-  optimizer: "sgd"
+  optimizer: "adam"
   criterion: "focal"
+  weight_decay: 0.02
   gamma: 3.0
   alpha: "reweight"
   # alpha: None
 
 experiment:
   seed: 42
-  experiment_name: effnet_v2_focal
+  experiment_name: deit_hidden_units
 
 transforms:
-  resize: [480,480]
+  resize: [224,224]
   horizontal_flip: 0.5
-  rotate: 15
   jitter:
     brightness: 0.2
     contrast: 0.2
