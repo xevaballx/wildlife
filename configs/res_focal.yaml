@@ -1,4 +1,4 @@
-# Config for Resnet Focal Loss with Reweight
+# Default Configuration #
 
 device: "mps"
 
@@ -12,18 +12,17 @@ model:
 train:
   batch_size: 32
   epochs: 6
-  lr: 0.005
+  lr: 0.001
   momentum: 0.9
   optimizer: "sgd"
   criterion: "focal"
   gamma: 3.0
-  alpha: "reweight"
-  weight_decay: 0.001
-  # alpha: None
+  alpha: None
+  weight_decay: 0.01
 
 experiment:
   seed: 42
-  experiment_name: resnet_focal_reweight
+  experiment_name: resnet_focal
 
 transforms:
   resize: [224,224]
