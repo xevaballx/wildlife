@@ -5,7 +5,7 @@ Define and Return Model
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import models
-# from transformers import DeiTFeatureExtractor, DeiTForImageClassification
+from transformers import DeiTFeatureExtractor, DeiTForImageClassification, AutoFeatureExtractor, AutoModelForImageClassification
 
 
 def build_resnet50_basic(
@@ -87,48 +87,88 @@ def build_efficientnet_v2_basic(
     return model
 
 
-# def build_deit_model(
-#     num_classes=8, 
-#     hidden_units1=None, 
-#     dropout=0.1, 
-#     freeze_backbone=False
-# ):
-#     """
-#     Builds and returns a DeiT model with feature extractor for image classification.
-#     Args:
-#         num_classes (int): Number of output classes
-#         hidden_units1 (int): Number of hidden units in the additional layer
-#         dropout (float): Dropout rate
-#         freeze_backbone (bool): Whether to freeze the backbone layers
-#     Returns: tuple: (feature_extractor, model)
-#     "facebook/deit-small-patch16-224"
-#     """
-#     # Load pre-trained DeiT feature extractor
-#     feature_extractor = DeiTFeatureExtractor.from_pretrained(
-#         'facebook/deit-base-distilled-patch16-224'
-#     )
+def build_deit_model(
+    num_classes=8, 
+    dropout=0.1, 
+    hidden_units1=256,
+    freeze_backbone=False
+):
+    """
+    Builds and returns a DeiT model with feature extractor for image classification.
+    Args:
+        num_classes (int): Number of output classes
+        hidden_units1 (int): Number of hidden units in the additional layer
+        dropout (float): Dropout rate
+        freeze_backbone (bool): Whether to freeze the backbone layers
+    Returns: tuple: (feature_extractor, model)
+    "facebook/deit-small-patch16-224"
+    """
+    # Load pre-trained DeiT feature extractor
+    feature_extractor = DeiTFeatureExtractor.from_pretrained(
+        'facebook/deit-base-distilled-patch16-224'
+    )
     
-#     # Load pre-trained DeiT model
-#     model = DeiTForImageClassification.from_pretrained(
-#         'facebook/deit-base-distilled-patch16-224', 
-#         num_labels=num_classes
-#     )
+    # Load pre-trained DeiT model
+    model = DeiTForImageClassification.from_pretrained(
+        'facebook/deit-base-distilled-patch16-224', 
+        num_labels=num_classes
+    )
     
-#     # Optionally freeze the backbone
-#     if freeze_backbone:
-#         for param in model.parameters(): # Freeze everything except the head
-#             param.requires_grad = False
+    # Optionally freeze the backbone
+    if freeze_backbone:
+        for param in model.parameters(): # Freeze everything except the head
+            param.requires_grad = False
     
-#     # Modify the classification head
-#     in_features = model.classifier[1].in_features  # Get input size of the final layer
-#     model.classifier = nn.Sequential(
-#         nn.Linear(in_features, hidden_units1),
-#         nn.ReLU(inplace=True),
-#         nn.Dropout(dropout),
-#         nn.Linear(hidden_units1, num_classes)
-#     )
+     # Modify the classification head
+    in_features = model.classifier.in_features  # Number of input features to the classifier
+    # model.classifier = nn.Sequential(
+    #     nn.Dropout(p=dropout),  # Add dropout for regularization
+    #     nn.Linear(in_features, num_classes)  # Final classification layer
+    # )
+    model.classifier = nn.Sequential(
+        nn.Dropout(p=dropout),                   # First dropout for regularization
+        nn.Linear(in_features, hidden_units1),    # First layer to project features
+        nn.ReLU(inplace=True),                   # Activation for non-linearity
+        nn.Dropout(p=dropout),                   # Second dropout for regularization
+        nn.Linear(hidden_units1, num_classes)     # Final classification layer
+    )
     
-#     return feature_extractor, model
+    return feature_extractor, model
+
+def build_swin_model(
+    num_classes=8,
+    dropout=0.1,
+    freeze_backbone=False
+):
+    """
+    Builds and returns a Swin Transformer model for image classification.
+    Args:
+        num_classes (int): Number of output classes.
+        dropout (float): Dropout rate for the classification head.
+        freeze_backbone (bool): Whether to freeze the backbone layers.
+    Returns: tuple: (feature_extractor, model)
+    """
+    # Load the feature extractor and model
+    feature_extractor = AutoFeatureExtractor.from_pretrained("microsoft/swin-tiny-patch4-window7-224")
+    model = AutoModelForImageClassification.from_pretrained(
+        "microsoft/swin-tiny-patch4-window7-224",
+        num_labels=num_classes,
+        ignore_mismatched_sizes=True  # Ignore size mismatch for classifier layer
+    )
+    
+    # Optionally freeze the backbone
+    if freeze_backbone:
+        for param in model.swin.parameters():
+            param.requires_grad = False
+    
+    # Modify the classification head (if needed)
+    in_features = model.classifier.in_features
+    model.classifier = nn.Sequential(
+        nn.Linear(in_features, num_classes),
+        nn.Dropout(p=dropout),
+    )
+    
+    return feature_extractor, model
 
 
 """
