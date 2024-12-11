@@ -45,9 +45,9 @@ class FocalLoss(nn.Module):
         :param target: labels
         :return: tensor of focal loss in scalar
         """
-        if self.weight is not None:
-            # print("in first self weight", self.weight)
-            self.weight = self.weight.to(input.device)
+        # if self.weight is not None:
+        #     # print("in first self weight", self.weight)
+        #     self.weight = self.weight.to(input.device)
 
         # compute softmax probabilities
         probs = F.softmax(input, dim=1) # (N, num_classes)
