@@ -4,7 +4,6 @@ from torch.optim import SGD
 from torch.nn import CrossEntropyLoss
 from src.utils import set_seeds
 from src.focal_loss import FocalLoss, reweight
-from torchvision.ops import sigmoid_focal_loss
 import numpy as np
 import wandb
 import torch.nn.functional as F
@@ -12,7 +11,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score, classificat
 
 def setup_training(
         model, criterion='cross_entropy', optimizer="sgd", 
-        lr=0.001, momentum=0.9, gamma=2.0, alpha=1.0, weight_decay=0.01,
+        lr=0.001, momentum=0.9, gamma=2.0, alpha=None, weight_decay=0.0,
         device='cpu', cls_num_list=None):
     """
     Set up the optimizer and loss function based on the training configuration.
@@ -44,6 +43,7 @@ def setup_training(
             model.parameters(),
             lr=lr,
             momentum=momentum,
+            weight_decay=weight_decay
         )
     elif optimizer == 'adam':
         optim = torch.optim.Adam(model.parameters(),weight_decay=weight_decay,lr=lr)

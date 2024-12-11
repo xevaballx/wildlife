@@ -1,0 +1,45 @@
+# Config for Resnet Focal Loss with Reweight
+
+device: "mps"
+
+model:
+  num_classes: 8
+  architecture: resnet50
+  freeze_backbone: False
+  dropout: 0.1
+  hidden_units1: 100
+  
+train:
+  batch_size: 32
+  epochs: 6
+  lr: 0.005
+  momentum: 0.9
+  optimizer: "sgd"
+  criterion: "focal"
+  gamma: 3.0
+  alpha: "reweight"
+  weight_decay: 0.001
+  # alpha: None
+
+experiment:
+  seed: 42
+  experiment_name: resnet_focal_reweight
+
+transforms:
+  resize: [224,224]
+  horizontal_flip: 0.5
+  rotate: 15
+  jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+  custom:
+    block_timestamp: True
+
+log:
+  img_count: 5
+ 
+
+
+
