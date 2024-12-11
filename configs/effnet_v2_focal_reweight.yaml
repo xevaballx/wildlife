@@ -1,0 +1,44 @@
+# Default Configuration #
+
+device: "mps"
+
+model:
+  num_classes: 8
+  architecture: efficientnet_v2
+  freeze_backbone: False
+  dropout: 0.05
+  hidden_units1: 100
+  
+train:
+  batch_size: 8
+  epochs: 3
+  lr: 0.001
+  momentum: 0.9
+  optimizer: "sgd"
+  criterion: "focal"
+  gamma: 3.0
+  alpha: "reweight"
+  # alpha: None
+
+experiment:
+  seed: 42
+  experiment_name: effnet_v2_focal_reweight
+
+transforms:
+  resize: [480,480]
+  horizontal_flip: 0.5
+  rotate: 15
+  jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+  custom:
+    block_timestamp: True
+
+log:
+  img_count: 5
+ 
+
+
+
