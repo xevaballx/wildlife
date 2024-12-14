@@ -121,17 +121,17 @@ def build_deit_model(
     
      # Modify the classification head
     in_features = model.classifier.in_features  # Number of input features to the classifier
-    # model.classifier = nn.Sequential(
-    #     nn.Dropout(p=dropout),  # Add dropout for regularization
-    #     nn.Linear(in_features, num_classes)  # Final classification layer
-    # )
     model.classifier = nn.Sequential(
-        nn.Dropout(p=dropout),                   # First dropout for regularization
-        nn.Linear(in_features, hidden_units1),    # First layer to project features
-        nn.ReLU(inplace=True),                   # Activation for non-linearity
-        nn.Dropout(p=dropout),                   # Second dropout for regularization
-        nn.Linear(hidden_units1, num_classes)     # Final classification layer
+        nn.Dropout(p=dropout),  # Add dropout for regularization
+        nn.Linear(in_features, num_classes)  # Final classification layer
     )
+    # model.classifier = nn.Sequential(
+    #     nn.Dropout(p=dropout),                   # First dropout for regularization
+    #     nn.Linear(in_features, hidden_units1),    # First layer to project features
+    #     nn.ReLU(inplace=True),                   # Activation for non-linearity
+    #     nn.Dropout(p=dropout),                   # Second dropout for regularization
+    #     nn.Linear(hidden_units1, num_classes)     # Final classification layer
+    # )
     
     return feature_extractor, model
 

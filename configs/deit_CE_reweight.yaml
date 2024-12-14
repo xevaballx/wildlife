@@ -1,0 +1,46 @@
+# Deit Cross Entropy with Reweight#
+
+device: "mps"
+
+model:
+  num_classes: 8
+  architecture: deit
+  freeze_backbone: True
+  dropout: 0.4
+  hidden_units1: None
+  
+train:
+  batch_size: 16
+  epochs: 4
+  lr: 0.0005
+  momentum: 0.9
+  optimizer: "adam"
+  criterion: "cross_entropy"
+  weight_decay: 0.001
+  gamma: 3.0
+  alpha: "reweight"
+  # alpha: None
+
+experiment:
+  seed: 42
+  experiment_name: deit_CERW
+
+transforms:
+  # resize: [224,224]
+  resize: [480,480]
+  rotate: 0
+  horizontal_flip: 0.5
+  jitter:
+    brightness: 0.2
+    contrast: 0.2
+    saturation: 0.2
+    hue: 0.1
+  custom:
+    block_timestamp: True
+
+log:
+  img_count: 5
+ 
+
+
+

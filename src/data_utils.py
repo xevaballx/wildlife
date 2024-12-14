@@ -221,7 +221,7 @@ def get_transforms_transformer(config, seed=42):
         
     train_transform_list.extend([
         transforms.RandomHorizontalFlip(p=config["transforms"]["horizontal_flip"]),
-        # transforms.RandomRotation(config["transforms"]["rotate"])
+        transforms.RandomRotation(config["transforms"]["rotate"]),
         transforms.ColorJitter(
             brightness=config["transforms"]["jitter"]["brightness"],
             contrast=config["transforms"]["jitter"]["contrast"],

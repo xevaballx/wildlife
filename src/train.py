@@ -347,7 +347,6 @@ def train_deit(
         images = batch["image"].to(device)
         labels = batch["label"].to(device)
  
-
         # forward pass
         outputs = model(pixel_values=images)
         loss = criterion(outputs.logits, labels)
@@ -361,7 +360,6 @@ def train_deit(
         # ✨ W&B: Log loss over training steps, visualized in the UI live
         if (batch_n + 1 ) % 50 == 0: 
             wandb.log({"loss" : loss, "epoch": epoch+1,})
-
 
         # Print progress every 100 batches
         if (batch_n + 1 ) % 100 == 0: 

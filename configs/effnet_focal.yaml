@@ -1,33 +1,34 @@
-# Default Configuration #
+# Effnet Focal loss no Reweight Configuration #
 
 device: "mps"
 
 model:
   num_classes: 8
-  architecture: deit
-  freeze_backbone: True
-  dropout: 0.1
-  hidden_units1: 256
+  architecture: efficientnet_v2
+  freeze_backbone: False
+  dropout: 0.05
+  hidden_units1: 100
   
 train:
   batch_size: 8
   epochs: 2
   lr: 0.001
   momentum: 0.9
-  optimizer: "adam"
+  optimizer: "sgd"
   criterion: "focal"
-  weight_decay: 0.02
   gamma: 3.0
-  alpha: "reweight"
-  # alpha: None
+  # alpha: "reweight"
+  weight_decay: 0.01
+  alpha: None
 
 experiment:
   seed: 42
-  experiment_name: deit_hidden_units
+  experiment_name: effnet_focal
 
 transforms:
-  resize: [224,224]
+  resize: [480,480]
   horizontal_flip: 0.5
+  rotate: 15
   jitter:
     brightness: 0.2
     contrast: 0.2
