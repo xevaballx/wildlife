@@ -1,4 +1,4 @@
-# Default Configuration #
+# Deit Cross Entropy with Reweight#
 
 device: "mps"
 
@@ -6,27 +6,29 @@ model:
   num_classes: 8
   architecture: deit
   freeze_backbone: True
-  dropout: 0.1
-  hidden_units1: 256
+  dropout: 0.4
+  hidden_units1: None
   
 train:
-  batch_size: 8
-  epochs: 2
-  lr: 0.001
+  batch_size: 16
+  epochs: 4
+  lr: 0.0005
   momentum: 0.9
   optimizer: "adam"
-  criterion: "focal"
-  weight_decay: 0.02
+  criterion: "cross_entropy"
+  weight_decay: 0.001
   gamma: 3.0
   alpha: "reweight"
   # alpha: None
 
 experiment:
   seed: 42
-  experiment_name: deit_hidden_units
+  experiment_name: deit_CERW
 
 transforms:
-  resize: [224,224]
+  # resize: [224,224]
+  resize: [480,480]
+  rotate: 0
   horizontal_flip: 0.5
   jitter:
     brightness: 0.2
